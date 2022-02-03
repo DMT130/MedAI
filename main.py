@@ -1,6 +1,5 @@
 from preprocessing import read_normal_image, read_dcm_image, preprocess_normal, preprocess_dcm, predict, im_show_dcm, im_show_normal
 from fastapi import FastAPI, File, UploadFile
-from torch_snippets import *
 import os
 import json 
 import base64
@@ -58,10 +57,10 @@ async def predict_image(file: UploadFile = File(...)):
             H, W, _ = showim.shape
         for i,j in zip(bbs, info):
             xmin, ymin, w, h = i
-            widh = int(w*1024/W)
-            heigh = int(h*1024/H)
-            X = int((xmin*1024)/W)
-            Y = int((ymin*1024)/H)
+            widh = int(w)
+            heigh = int(h)
+            X = int(xmin)
+            Y = int(ymin)
             showim = cv2.rectangle(showim, (X, Y), (widh, heigh), (0, 0, 255), 2)
             showim = cv2.putText(showim, j, (X, Y), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
         #path = f"{IMAGEDIR}{file.filename}"
@@ -72,7 +71,7 @@ async def predict_image(file: UploadFile = File(...)):
             "mime" : "image/png",
             "image": encoded_image_string,
             "classes":info,
-            "BoundingBox":bbs
+            "BoundingBox":(np.array(bbs).astype('int')).tolist()
         }
         #return StreamingResponse(BytesIO(im_png.tobytes()), media_type="image/png")
         return payload
@@ -88,10 +87,10 @@ async def predict_image(file: UploadFile = File(...)):
         info, bbs, labels = predict(image)
         for i,j in zip(bbs, info):
             xmin, ymin, w, h = i
-            widh = int(w*1024/W)
-            heigh = int(h*1024/H)
-            X = int((xmin*1024)/W)
-            Y = int((ymin*1024)/H)
+            widh = int(w)
+            heigh = int(h)
+            X = int(xmin)
+            Y = int(ymin)
             showim = cv2.rectangle(showim, (X, Y), (widh, heigh), (0, 0, 255), 2)
             showim = cv2.putText(showim, j, (X, Y), cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 0), 2)
         res, im_png = cv2.imencode(".png", showim)
@@ -101,7 +100,7 @@ async def predict_image(file: UploadFile = File(...)):
             "mime" : "image/png",
             "image": encoded_image_string,
             "classes":info,
-            "BoundingBox":bbs
+            "BoundingBox":(np.array(bbs).astype('int')).tolist()
         }
         #return StreamingResponse(BytesIO(im_png.tobytes()), media_type="image/png")
         return payload

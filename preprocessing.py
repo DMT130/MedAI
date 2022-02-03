@@ -1,19 +1,11 @@
-from torch_snippets import *
 from PIL import Image
-from torchvision import transforms, models, datasets
-from torch_snippets import Report
-from torchvision.ops import nms
 from io import BytesIO
 import numpy as np
 import pydicom
 from pydicom.pixel_data_handlers.util import apply_voi_lut, apply_modality_lut
-import cv2
-import torch
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-from torchvision import transforms, models, datasets
 import matplotlib.pyplot as plt
-import torchvision
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
+from onnxpre import onnxpredic
+from nmax import non_max_suppression_fast as nms
 PATH='ChestXR31.pt'
 
 label2target = {'Aortic enlargement': 2,'Atelectasis': 8,'Calcification': 12,'Cardiomegaly': 1,'Consolidation': 13,
@@ -59,47 +51,39 @@ def im_show_normal(image):
     return image
 
 def preprocess_dcm(image):
+    image = im_show_dcm(image)
+    image = np.array(image)
     image = image/255.
+    image = np.reshape(image, SIZE)
     image = np.stack([image, image, image], axis=0)
-    image = torch.tensor(image.astype('float32'))
-    return image.to(device).float()
+    image = image.astype('float32')
+    return image
 
 def preprocess_normal(image):
     image = image.resize(SIZE, Image.BILINEAR)
     image = np.asarray(image)
-    print(image.shape)
     if image.shape[-1]==3:
         image = np.rollaxis(image,2)
-        image = torch.tensor(image.astype('float32'))
-        return image.to(device).float()
+        image = image.astype('float32')
+        return image
     elif len(image.shape) ==2:
         image = image / 255.
         image = np.stack([image, image, image], axis=0)
-        image = torch.tensor(image.astype('float32'))
-        return image.to(device).float()
+        image = image.astype('float32')
+        return image
     else:
         image = image[:,:,0] / 255.
         image = np.stack([image, image, image], axis=0)
-        image = torch.tensor(image.astype('float32'))
-        return image.to(device).float()
+        image = image.astype('float32')
+        return image
 
-def get_model():
-        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(pretrained=False)
-        in_features = model.roi_heads.box_predictor.cls_score.in_features
-        model.roi_heads.box_predictor = FastRCNNPredictor(in_features, 15)
-        return model
-
-model = get_model().to(device)
-model.load_state_dict(torch.load(PATH, map_location=torch.device(device)))
-#model = torch.load(PATH, map_location=torch.device(device))
-
-from torchvision.ops import nms
 def decode_output(output):
     'convert tensors to numpy arrays'
-    bbs = output['boxes'].cpu().detach().numpy().astype(np.uint16)
-    labels = np.array([target2label[i] for i in output['labels'].cpu().detach().numpy()])
-    confs = output['scores'].cpu().detach().numpy()
-    ixs = nms(torch.tensor(bbs.astype(np.float32)), torch.tensor(confs), 0.05)
+    bbs, labels, confs = output
+    #bbs = output['boxes'].cpu().detach().numpy().astype(np.uint16)
+    labels = np.array([target2label[i] for i in labels])#.cpu().detach().numpy()])
+    #confs = output['scores']#.cpu().detach().numpy()
+    ixs = nms(bbs.astype(np.float32), 0.05)
     bbs, confs, labels = [tensor[ixs] for tensor in [bbs, confs, labels]]
 
     if len(ixs) == 1:
@@ -107,12 +91,11 @@ def decode_output(output):
     return bbs.tolist(), confs.tolist(), labels.tolist()
 
 def predict(image):
-    model.eval()
-    with torch.no_grad():
-        image.unsqueeze_(0)
-        print(image.shape)
-        outputs = model(image)
-        for ix, output in enumerate(outputs):
-            bbs, confs, labels = decode_output(output)
-            info = [f'{l}:{c:.2f}' for l,c in zip(labels, confs)]
-            return info, bbs, labels
+    image=np.expand_dims(image, axis=0)
+    print('shape:', image.shape)
+    #outputs = model(image)
+    outputs=onnxpredic(image)
+    #for ix, output in enumerate(outputs):
+    bbs, confs, labels = decode_output(outputs)
+    info = [f'{l}:{c:.2f}' for l,c in zip(labels, confs)]
+    return info, bbs, labels
