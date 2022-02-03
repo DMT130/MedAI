@@ -3,7 +3,7 @@ import onnx
 import onnxruntime as ort
 import numpy as np
 
-async def onnxpredic(dummpy_input):
+def onnxpredic(dummpy_input):
     sess_options = ort.SessionOptions()
     # Below is for optimizing performance
     #sess_options.intra_op_num_threads = 24
