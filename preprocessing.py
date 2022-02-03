@@ -90,11 +90,11 @@ def decode_output(output):
         bbs, confs, labels = [np.array([tensor]) for tensor in [bbs, confs, labels]]
     return bbs.tolist(), confs.tolist(), labels.tolist()
 
-def predict(image):
+async def predict(image):
     image=np.expand_dims(image, axis=0)
     print('shape:', image.shape)
     #outputs = model(image)
-    outputs=onnxpredic(image)
+    outputs= await onnxpredic(image)
     #for ix, output in enumerate(outputs):
     bbs, confs, labels = decode_output(outputs)
     info = [f'{l}:{c:.2f}' for l,c in zip(labels, confs)]

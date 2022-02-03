@@ -44,7 +44,7 @@ async def predict_image(file: UploadFile = File(...)):
     if extention in ("jpg", "jpeg", "png"):
         Nimage = read_normal_image(contents)
         image = preprocess_normal(Nimage)
-        info, bbs, labels = predict(image)
+        info, bbs, labels = await predict(image)
         showim = im_show_normal(Nimage)
         showim = np.array(showim)
         try:
@@ -81,7 +81,7 @@ async def predict_image(file: UploadFile = File(...)):
         showim = np.array(show)
         showim = np.stack([showim, showim, showim], axis=2)
         image = preprocess_dcm(Nimage)
-        info, bbs, labels = predict(image)
+        info, bbs, labels = await predict(image)
         for i,j in zip(bbs, info):
             xmin, ymin, w, h = i
             widh = int(w)
