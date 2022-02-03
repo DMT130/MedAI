@@ -1,12 +1,9 @@
 from preprocessing import read_normal_image, read_dcm_image, preprocess_normal, preprocess_dcm, predict, im_show_dcm, im_show_normal
 from fastapi import FastAPI, File, UploadFile
-import os
-import json 
 import base64
 import cv2
 import numpy as np
 import uuid
-import shutil
 from io import BytesIO
 from fastapi.responses import FileResponse, Response, StreamingResponse, JSONResponse
 from starlette.middleware import Middleware
