@@ -3,7 +3,6 @@ from io import BytesIO
 import numpy as np
 import pydicom
 from pydicom.pixel_data_handlers.util import apply_voi_lut, apply_modality_lut
-import matplotlib.pyplot as plt
 from onnxpre import onnxpredic
 from nmax import non_max_suppression_fast as nms
 PATH='ChestXR31.pt'
